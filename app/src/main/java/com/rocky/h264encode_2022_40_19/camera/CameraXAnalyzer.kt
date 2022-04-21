@@ -2,7 +2,9 @@ package com.rocky.h264encode_2022_40_19.camera
 
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
+import androidx.camera.core.VideoCapture
 import java.nio.ByteBuffer
+
 
 class CameraXAnalyzer(
     private val
@@ -15,6 +17,7 @@ class CameraXAnalyzer(
     private var y: ByteArray? = null
     private var u: ByteArray? = null
     private var v: ByteArray? = null
+
     override fun analyze(image: ImageProxy) {
         val planes = image.planes
         //防止多次初始化数组

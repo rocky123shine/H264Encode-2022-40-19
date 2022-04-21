@@ -96,16 +96,29 @@ object CameraXHelper {
                         nv21_rotated = ByteArray(rowStride * mPreviewSize.height * 3 / 2)
                     }
 
+                    nv21?.apply {
+                        val yLen = y.size
+                        System.arraycopy(y, 0, this, 0, yLen)
+                        var vIndex = 0
+                        var uIndex = 0
+                        val len = yLen + u.size.shr(1) + v.size.shr(1)
+                        for (i in yLen until len step 2) {
+                            this[i] = v[vIndex]
+                            this[i + 1] = u[uIndex]
+                            vIndex += 2
+                            uIndex += 2
+                        }
+                    }
 
-
-                    ImageUtil.yuvToNv21(y, u, v, nv21, rowStride, mPreviewSize.height)
-//                    //对数据进行旋转   90度
+//                    ImageUtil.yuvToNv21(y, u, v, nv21, rowStride, mPreviewSize.height)
+////                    //对数据进行旋转   90度
                     ImageUtil.nv21_rotate_to_90(nv21, nv21_rotated, rowStride, mPreviewSize.height)
-                    //Nv12     yuv420
+//                    //Nv12     yuv420
                     val temp: ByteArray = ImageUtil.nv21toNV12(nv21_rotated, nv12)
                     //进行编码
                     if (null == h264EncodeThread) {
-                        h264EncodeThread = H264EncodeThread(WIDTH = mPreviewSize.width,
+                        h264EncodeThread = H264EncodeThread(
+                            WIDTH = mPreviewSize.width,
                             HEIGHT = mPreviewSize.height,
                             encode = { temp },
                             colorFormat = MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible

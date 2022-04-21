@@ -79,35 +79,34 @@ class H264EncodeThread(
     override fun run() {
         super.run()
         mediaCodec.start()
-        val info: MediaCodec.BufferInfo = MediaCodec.BufferInfo()
         //这里多线程 使用外部变量终端线程 可以多做考虑  这里就简单处理了
+        val info: MediaCodec.BufferInfo = MediaCodec.BufferInfo()
         try {
             while (!isStop) {
 
                 encode?.apply {
                     val temp = invoke()
-                    val inIndex = mediaCodec.dequeueInputBuffer(10_0000)
+                    val inIndex = mediaCodec.dequeueInputBuffer(100_000)
                     if (inIndex >= 0) {
                         val byteBuffer: ByteBuffer? = mediaCodec.getInputBuffer(inIndex)
                         byteBuffer?.clear()
-                        byteBuffer?.put(temp, 0, temp.size)
+                        byteBuffer?.put(temp)
                         mediaCodec.queueInputBuffer(
                             inIndex,
                             0,
                             temp.size,
-                            computePts(),
+                            System.nanoTime() / 1000,
                             0)
-                        index++
                     }
                 }
 
 
-                val outIndex = mediaCodec.dequeueOutputBuffer(info, 10_000)
-                if (outIndex >= 0) {
+                var outIndex = mediaCodec.dequeueOutputBuffer(info, 100_000)
+                while (outIndex >= 0) {
                     //拿到可用的buffer
                     val outtBuffer = mediaCodec.getOutputBuffer(outIndex)
                     //读取编码好的数据
-                    val data = ByteArray(outtBuffer?.remaining() ?: 0)
+                    val data = ByteArray(info.size)
                     outtBuffer?.get(data)
 //                     to file
                     FileUtils.writeBytes(data)
@@ -117,7 +116,7 @@ class H264EncodeThread(
                         outIndex,
                         false//如果有渲染显示目标这需要传true
                     )
-
+                    outIndex = mediaCodec.dequeueOutputBuffer(info, 100_000)
                 }
 
             }
@@ -135,9 +134,7 @@ class H264EncodeThread(
         }
     }
 
-    private var index = 0
     fun startEncode() {
-        index = 0
         isStop = false
         start()//启动线程
     }
@@ -148,8 +145,4 @@ class H264EncodeThread(
 
     var onException: ((String) -> Unit)? = null
 
-    //    pts      帧率    15帧  1 帧    1000 000 /20   1000 000 /20 *2  1000 000 /20 *3  1000 000 /20 *4   1000 000 /20 *5
-    private fun computePts(): Long {
-        return 1000000 / 20 * index.toLong()
-    }
 }
